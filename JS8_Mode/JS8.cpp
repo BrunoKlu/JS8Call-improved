@@ -1588,9 +1588,9 @@ namespace
                                                     uncertain);
 
                     if (decoder_js8().isDebugEnabled()) {
-                        qCDebug(decoder_js8)
-                            << "LDPC feedback pass" << "ipass" << ipass << "confident" << confident
-                            << "uncertain" << uncertain;
+                        qCDebug(decoder_js8) << "LDPC feedback pass"
+                                             << "ipass" << ipass << "confident" << confident
+                                             << "uncertain" << uncertain;
                     }
 
                     usedFeedbackPass = true;
@@ -1602,9 +1602,9 @@ namespace
                         feedbackTurnedSuccess = true;
                         if (decoder_js8().isDebugEnabled()) {
                             qCDebug(decoder_js8)
-                                << "LDPC feedback succeeded on second pass" << "ipass" << ipass
-                                << "confident" << feedbackConfident << "uncertain"
-                                << feedbackUncertain << "passes" << totalLdpcPasses;
+                                << "LDPC feedback succeeded on second pass"
+                                << "ipass" << ipass << "confident" << feedbackConfident
+                                << "uncertain" << feedbackUncertain << "passes" << totalLdpcPasses;
                         }
                         return result;
                     }
@@ -1615,9 +1615,10 @@ namespace
 
             if (decoder_js8().isDebugEnabled()) {
                 qCDebug(decoder_js8)
-                    << "LDPC feedback summary" << "used" << usedFeedbackPass << "success"
-                    << feedbackTurnedSuccess << "confident" << feedbackConfident << "uncertain"
-                    << feedbackUncertain << "passes" << totalLdpcPasses;
+                    << "LDPC feedback summary"
+                    << "used" << usedFeedbackPass << "success" << feedbackTurnedSuccess
+                    << "confident" << feedbackConfident << "uncertain" << feedbackUncertain
+                    << "passes" << totalLdpcPasses;
             }
 
             logTracker("fail");

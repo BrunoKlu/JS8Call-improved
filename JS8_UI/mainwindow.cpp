@@ -292,6 +292,15 @@ MainWindow::MainWindow(QString const& program_info,
             &MainWindow::aprsClientSetSkipPercent,
             m_aprsClient,
             &APRSISClient::setSkipPercent);
+    connect(this,
+            &MainWindow::aprsClientSetIncomingRelayEnabled,
+            m_aprsClient,
+            &APRSISClient::setIncomingRelayEnabled);
+    connect(&m_config,
+            &Configuration::spot_to_aprs_relay_changed,
+            m_aprsClient,
+            &APRSISClient::setIncomingRelayEnabled);
+    connect(m_aprsClient, &APRSISClient::messageReceived, this, &MainWindow::onAPRSMessageReceived);
     connect(&m_networkThread, &QThread::finished, m_aprsClient, &QObject::deleteLater);
 
     // hook up the psk reporter slots and signals and disposal
@@ -2419,6 +2428,7 @@ void MainWindow::prepareSpotting()
         aprsSetLocal();
         emit aprsClientSetSkipPercent(0.25);
         emit aprsClientSetServer(m_config.aprs_server_name(), m_config.aprs_server_port());
+        emit aprsClientSetIncomingRelayEnabled(m_config.spot_to_aprs_relay());
         emit aprsClientSetPaused(false);
         ui->spotButton->setChecked(true);
     } else {
@@ -2896,8 +2906,8 @@ bool MainWindow::decode(qint32 k)
     static int k0 = 9'999'999;
     int kZero = k0;
     k0 = k;
-    qCDebug(decoder_js8) << "decoder checking if ready..." << "k" << k << "k0" << kZero << "busy?"
-                         << m_decoderBusy << "lock exists?"
+    qCDebug(decoder_js8) << "decoder checking if ready..."
+                         << "k" << k << "k0" << kZero << "busy?" << m_decoderBusy << "lock exists?"
                          << (QFile { m_config.temp_dir().absoluteFilePath(".lock") }.exists());
 
     if (k == kZero) {
@@ -3290,8 +3300,8 @@ bool MainWindow::decodeProcessQueue(qint32* pSubmode)
 
     int count = m_decoderQueue.count();
     if (count > maxDecodes) {
-        qCDebug(decoder_js8) << "--> decoder skipping at least 1 decode cycle" << "count" << count
-                             << "max" << maxDecodes;
+        qCDebug(decoder_js8) << "--> decoder skipping at least 1 decode cycle"
+                             << "count" << count << "max" << maxDecodes;
     }
 
     // default to no submodes being decoded, then bitwise OR the modes together
@@ -3398,8 +3408,8 @@ void MainWindow::decodeStart()
 
     decodeBusy(true);
     qCDebug(decoder_js8)
-        << "--> decoder starting" << " --> kin:" << dec_data.params.kin
-        << " --> newdat:" << dec_data.params.newdat
+        << "--> decoder starting"
+        << " --> kin:" << dec_data.params.kin << " --> newdat:" << dec_data.params.newdat
         << " --> nsubmodes:" << dec_data.params.nsubmodes << " --> A:" << dec_data.params.kposA
         << dec_data.params.kposA + dec_data.params.kszA << QString("(%1)").arg(dec_data.params.kszA)
         << " --> B:" << dec_data.params.kposB << dec_data.params.kposB + dec_data.params.kszB
@@ -4795,12 +4805,26 @@ void MainWindow::restoreMessage()
     addMessageText(Varicode::rstrip(m_lastTxMessage), true);
 }
 
+/**
+ * @brief Resets the frame-level transmission state after a message completes.
+ *
+ * This function clears the frame queue and resets frame counters, preparing
+ * the system for the next message transmission. Importantly, it does NOT
+ * clear m_txMessageQueue, which holds pending high-level messages (e.g.,
+ * queued APRS relay messages) that should be transmitted after the current
+ * transmission completes.
+ *
+ * @note Called via resetMessage() -> on_stopTxButton_clicked() when
+ *       transmission ends.
+ */
 void MainWindow::resetMessageTransmitQueue()
 {
     m_txFrameCount = 0;
     m_txFrameCountSent = 0;
     m_txFrameQueue.clear();
-    m_txMessageQueue.clear();
+    // Note: m_txMessageQueue is intentionally NOT cleared here.
+    // It holds pending messages (e.g., APRS relay messages) that should
+    // be transmitted after the current transmission completes.
 
     // reset the total message sent
     m_totalTxMessage.clear();
@@ -8013,6 +8037,25 @@ void MainWindow::processSpots()
     }
 }
 
+/**
+ * @brief Processes the outgoing message queue and initiates transmission.
+ *
+ * This function is called periodically (once per second) to check if there
+ * are pending messages in m_txMessageQueue that can be transmitted. It
+ * implements several guard conditions to ensure safe transmission:
+ *
+ * - The frame queue (m_txFrameQueue) must be empty
+ * - The message text box must be empty
+ * - No active transmission in progress (m_transmitting and m_txFrameCount)
+ * - Low priority messages must wait 30 seconds after last transmission
+ *
+ * When conditions are met, the next message is dequeued, placed in the
+ * message text box, and transmission is initiated for high-priority messages.
+ *
+ * @note This function works in conjunction with resetMessageTransmitQueue()
+ *       to support queuing multiple messages (e.g., APRS relay messages)
+ *       that are transmitted sequentially.
+ */
 void MainWindow::processTxQueue()
 {
 #if IDLE_BLOCKS_TX
@@ -8046,6 +8089,11 @@ void MainWindow::processTxQueue()
 
     // our message box needs to be empty...
     if (!ui->extFreeTextMsgEdit->toPlainText().isEmpty()) {
+        return;
+    }
+
+    // don't process if we're currently transmitting...
+    if (isMessageQueuedForTransmit()) {
         return;
     }
 
@@ -8100,6 +8148,56 @@ void displayBandActivity(); // JS8_Mainwindow/displayBandActivity.cpp
 
 // updateCallActivity
 void displayCallActivity(); // JS8_Mainwindow/displayCallActivity.cpp
+
+void MainWindow::onAPRSMessageReceived(QString from, QString to, QString message)
+{
+    qCDebug(mainwindow_js8) << "APRS Message Received from" << from << "to" << to << ":" << message;
+
+    // Explicitly log to ensure we see it
+    qDebug() << "DEBUG: APRS Message Received from" << from << "to" << to << ":" << message;
+
+    if (!m_config.spot_to_aprs_relay()) {
+        qDebug() << "DEBUG: APRS relay disabled";
+        return;
+    }
+
+    // Check if we have heard the destination station
+    if (!m_callActivity.contains(to)) {
+        qDebug() << "DEBUG: Destination not in heard list:" << to;
+        return;
+    }
+
+    // Check if the station is "active" if aging is enabled
+    if (m_config.callsign_aging() > 0) {
+        auto lastHeard = m_callActivity[to].utcTimestamp;
+        if (lastHeard.secsTo(DriftingDateTime::currentDateTimeUtc())
+            > m_config.callsign_aging() * 60) {
+            qDebug() << "DEBUG: Destination aged out:" << to;
+            return;
+        }
+    }
+
+    // Strip APRS message checksum (format: {number})
+    // Handles cases with or without closing brace, and optional whitespace
+    QRegularExpression aprsChecksumRe("\\{\\d+\\}?\\s*$");
+    message.remove(aprsChecksumRe);
+    message = message.trimmed();
+
+    qDebug() << "DEBUG: APRS Message after checksum strip:" << message;
+
+    // Construct the relay message
+    // @APRSIS MSG to:<DESTCALL> <MESSAGE> DE <SENDER>
+    QString relayMsg = QString("@APRSIS MSG to:%1 %2 DE %3").arg(to).arg(message).arg(from);
+
+    qCDebug(mainwindow_js8) << "Relaying APRS message from" << from << "to" << to << ":" << message;
+
+    // Show a notice in the UI
+    writeNoticeTextToUI(DriftingDateTime::currentDateTimeUtc(),
+                        QString("APRS-IS Relay: %1 -> %2: %3").arg(from).arg(to).arg(message));
+
+    // Enqueue message with high priority
+    enqueueMessage(PriorityHigh, relayMsg, -1, nullptr);
+}
 
 void MainWindow::emitPTT(bool on)
 {
@@ -8410,8 +8508,8 @@ void MainWindow::write_frequency_entry(QString const& file_name)
     if (f2.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append)) {
         QTextStream out(&f2);
         out << DriftingDateTime::currentDateTimeUtc().toString("yyyy-MM-dd hh:mm:ss") << "  "
-            << qSetRealNumberPrecision(12) << (m_freqNominal / 1.e6) << " MHz  " << "JS8"
-            << Qt::endl;
+            << qSetRealNumberPrecision(12) << (m_freqNominal / 1.e6) << " MHz  "
+            << "JS8" << Qt::endl;
         f2.close();
     } else {
         QTimer::singleShot(
@@ -8437,8 +8535,9 @@ void MainWindow::write_transmit_entry(QString const& file_name)
         time = time.addSecs(-(time.time().second() % m_TRperiod));
         auto dt = DecodedText(m_currentMessage, m_currentMessageBits, m_nSubMode);
         out << time.toString("yyyy-MM-dd hh:mm:ss") << "  Transmitting "
-            << qSetRealNumberPrecision(12) << (m_freqNominal / 1.e6) << " MHz  " << "JS8" << ":  "
-            << dt.message() << Qt::endl;
+            << qSetRealNumberPrecision(12) << (m_freqNominal / 1.e6) << " MHz  "
+            << "JS8"
+            << ":  " << dt.message() << Qt::endl;
         f.close();
     } else {
         QTimer::singleShot(

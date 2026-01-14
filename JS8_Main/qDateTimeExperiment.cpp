@@ -27,9 +27,10 @@ void QDateTimeRoundingExperiment::printRounding()
 {
     QDateTime now { QDateTime::currentDateTimeUtc() };
     qCDebug(qdatetimeexperiment_js8)
-        << "How does QDateTime round?" << "Without drift, now is " << now << "which translates to"
-        << now.toMSecsSinceEpoch() << "milliseconds after epoch" << "which is truncated to"
-        << now.toSecsSinceEpoch() << "milliseconds after epoch";
+        << "How does QDateTime round?"
+        << "Without drift, now is " << now << "which translates to" << now.toMSecsSinceEpoch()
+        << "milliseconds after epoch"
+        << "which is truncated to" << now.toSecsSinceEpoch() << "milliseconds after epoch";
 }
 
 Q_LOGGING_CATEGORY(qdatetimeexperiment_js8, "qdatetimeexperiment.js8", QtWarningMsg)

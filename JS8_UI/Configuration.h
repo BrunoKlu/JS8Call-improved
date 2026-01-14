@@ -137,6 +137,7 @@ public:
     bool spot_to_reporting_networks() const;
     void set_spot_to_reporting_networks(bool);
     bool spot_to_aprs() const;
+    bool spot_to_aprs_relay() const;
     bool transmit_directed() const;
     bool autoreply_on_at_startup() const;
     bool autoreply_confirmation() const;
@@ -352,6 +353,9 @@ public:
     Q_SIGNAL void tcp_server_changed(QString const& host);
     Q_SIGNAL void tcp_server_port_changed(port_type port);
     Q_SIGNAL void tcp_max_connections_changed(int n);
+
+    Q_SIGNAL void spot_to_aprs_relay_changed(bool enabled);
+
     // WSJT-X Protocol signals
     /**
      * @brief Emitted when WSJT-X protocol enabled state changes

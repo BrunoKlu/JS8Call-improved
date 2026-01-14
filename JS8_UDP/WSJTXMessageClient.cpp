@@ -382,8 +382,8 @@ void WSJTXMessageClient::impl::heartbeat()
         out << NetworkMessage::Builder::schema_number // maximum schema number
                                                       // accepted
             << version_.toUtf8() << revision_.toUtf8();
-        qCDebug(wsjtx_js8) << "WSJT-X: Sending Heartbeat message" << "id:" << id_
-                           << "schema:" << schema_ << "version:" << version_
+        qCDebug(wsjtx_js8) << "WSJT-X: Sending Heartbeat message"
+                           << "id:" << id_ << "schema:" << schema_ << "version:" << version_
                            << "revision:" << revision_ << "to:" << server_.toString()
                            << "port:" << server_port_;
         qCDebug(wsjtx_js8) << dump_payload(message);
@@ -402,8 +402,8 @@ void WSJTXMessageClient::impl::closedown()
     if (server_port_ && !server_.isNull()) {
         QByteArray message;
         NetworkMessage::Builder out { &message, NetworkMessage::Close, id_, schema_ };
-        qCDebug(wsjtx_js8) << "WSJT-X: Sending Close message" << "id:" << id_
-                           << "schema:" << schema_ << "to:" << server_.toString()
+        qCDebug(wsjtx_js8) << "WSJT-X: Sending Close message"
+                           << "id:" << id_ << "schema:" << schema_ << "to:" << server_.toString()
                            << "port:" << server_port_;
         qCDebug(wsjtx_js8) << dump_payload(message);
         send_message(out, message, false);
@@ -582,12 +582,13 @@ void WSJTXMessageClient::status_update(Frequency f,
             << de_grid.toUtf8() << dx_grid.toUtf8() << watchdog_timeout << sub_mode.toUtf8()
             << fast_mode << special_op_mode << frequency_tolerance << tr_period
             << configuration_name.toUtf8() << tx_message.toUtf8();
-        qCDebug(wsjtx_js8) << "WSJT-X: Sending Status message" << "freq:" << f << "mode:" << mode
-                           << "dx_call:" << dx_call << "tx_enabled:" << tx_enabled
-                           << "transmitting:" << transmitting << "decoding:" << decoding
-                           << "de_call:" << de_call << "de_grid:" << de_grid
-                           << "dx_grid:" << dx_grid << "sub_mode:" << sub_mode
-                           << "to:" << m_->server_.toString() << "port:" << m_->server_port_;
+        qCDebug(wsjtx_js8) << "WSJT-X: Sending Status message"
+                           << "freq:" << f << "mode:" << mode << "dx_call:" << dx_call
+                           << "tx_enabled:" << tx_enabled << "transmitting:" << transmitting
+                           << "decoding:" << decoding << "de_call:" << de_call
+                           << "de_grid:" << de_grid << "dx_grid:" << dx_grid
+                           << "sub_mode:" << sub_mode << "to:" << m_->server_.toString()
+                           << "port:" << m_->server_port_;
         qCDebug(wsjtx_js8) << dump_payload(message);
         m_->send_message(out, message);
     }
@@ -623,12 +624,13 @@ void WSJTXMessageClient::decode(bool is_new,
         NetworkMessage::Builder out { &message, NetworkMessage::Decode, m_->id_, m_->schema_ };
         out << is_new << time << snr << delta_time << delta_frequency << mode.toUtf8()
             << message_text.toUtf8() << low_confidence << off_air;
-        qCDebug(wsjtx_js8) << "WSJT-X: Sending Decode message" << "is_new:" << is_new
-                           << "time:" << time.toString("hh:mm:ss") << "snr:" << snr
-                           << "delta_time:" << delta_time << "delta_frequency:" << delta_frequency
-                           << "mode:" << mode << "message:" << message_text
-                           << "low_confidence:" << low_confidence << "off_air:" << off_air
-                           << "to:" << m_->server_.toString() << "port:" << m_->server_port_;
+        qCDebug(wsjtx_js8) << "WSJT-X: Sending Decode message"
+                           << "is_new:" << is_new << "time:" << time.toString("hh:mm:ss")
+                           << "snr:" << snr << "delta_time:" << delta_time
+                           << "delta_frequency:" << delta_frequency << "mode:" << mode
+                           << "message:" << message_text << "low_confidence:" << low_confidence
+                           << "off_air:" << off_air << "to:" << m_->server_.toString()
+                           << "port:" << m_->server_port_;
         qCDebug(wsjtx_js8) << dump_payload(message);
         m_->send_message(out, message);
     }
@@ -644,9 +646,9 @@ void WSJTXMessageClient::decodes_cleared()
     if (m_->server_port_ && !m_->server_.isNull()) {
         QByteArray message;
         NetworkMessage::Builder out { &message, NetworkMessage::Clear, m_->id_, m_->schema_ };
-        qCDebug(wsjtx_js8) << "WSJT-X: Sending Clear message" << "id:" << m_->id_
-                           << "schema:" << m_->schema_ << "to:" << m_->server_.toString()
-                           << "port:" << m_->server_port_;
+        qCDebug(wsjtx_js8) << "WSJT-X: Sending Clear message"
+                           << "id:" << m_->id_ << "schema:" << m_->schema_
+                           << "to:" << m_->server_.toString() << "port:" << m_->server_port_;
         qCDebug(wsjtx_js8) << dump_payload(message);
         m_->send_message(out, message);
     }

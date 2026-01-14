@@ -2335,7 +2335,8 @@ QList<QPair<QString, int>> Varicode::buildMessageFrames(QString const& mycall,
                     qCDebug(varicode_js8) << "before:" << line;
 
 #if 1
-                    int checksumSize = Varicode::isCommandChecksumed(dirCmd);
+                    bool skipAprsChecksum = (dirTo.compare("@APRSIS", Qt::CaseInsensitive) == 0);
+                    int checksumSize = skipAprsChecksum ? 0 : Varicode::isCommandChecksumed(dirCmd);
 #else
                     int checksumSize = 0;
 #endif

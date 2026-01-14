@@ -236,8 +236,9 @@ public:
             double const avgPre = total > 0.0 ? sumAbsPre / total : 0.0;
             double const avgPost = total > 0.0 ? sumAbsPost / total : 0.0;
 
-            qCDebug(decoder_js8) << "LLR whitening applied" << "avg|LLR| pre/post:" << avgPre
-                                 << avgPost << "erasures:" << erasures;
+            qCDebug(decoder_js8) << "LLR whitening applied"
+                                 << "avg|LLR| pre/post:" << avgPre << avgPost
+                                 << "erasures:" << erasures;
         }
 
         result.whiteningApplied = whiteningAvailable;

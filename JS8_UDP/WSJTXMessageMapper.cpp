@@ -119,9 +119,9 @@ void WSJTXMessageMapper::sendDecode(bool is_new,
                                     QString const& message,
                                     bool low_confidence)
 {
-    qCDebug(wsjtx_mapper_js8) << "WSJTXMessageMapper: sendDecode called" << "is_new:" << is_new
-                              << "time:" << time.toString("hh:mm:ss") << "snr:" << snr
-                              << "delta_time:" << delta_time
+    qCDebug(wsjtx_mapper_js8) << "WSJTXMessageMapper: sendDecode called"
+                              << "is_new:" << is_new << "time:" << time.toString("hh:mm:ss")
+                              << "snr:" << snr << "delta_time:" << delta_time
                               << "delta_frequency:" << delta_frequency << "mode:" << mode
                               << "message:" << message << "low_confidence:" << low_confidence;
     client_->decode(is_new,

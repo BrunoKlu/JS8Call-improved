@@ -434,6 +434,7 @@ private:
 
     Q_SLOT void on_psk_reporter_check_box_toggled(bool checked);
     Q_SLOT void on_enable_aprs_spotting_check_box_toggled(bool checked);
+    Q_SLOT void on_enable_aprs_relay_check_box_toggled(bool checked);
     Q_SLOT void on_notifications_check_box_toggled(bool checked);
     Q_SLOT void on_font_push_button_clicked();
     Q_SLOT void on_tableFontButton_clicked();
@@ -624,6 +625,7 @@ private:
     bool tx_qsy_allowed_;
     bool spot_to_reporting_networks_;
     bool spot_to_aprs_;
+    bool spot_to_aprs_relay_;
     bool transmit_directed_;
     bool autoreply_on_at_startup_;
     bool autoreply_confirmation_;
@@ -941,6 +943,11 @@ void Configuration::set_spot_to_reporting_networks(bool spot)
 bool Configuration::spot_to_aprs() const
 {
     return spot_to_reporting_networks() && m_->spot_to_aprs_;
+}
+
+bool Configuration::spot_to_aprs_relay() const
+{
+    return spot_to_aprs() && m_->spot_to_aprs_relay_;
 }
 
 bool Configuration::transmit_directed() const
@@ -1585,7 +1592,8 @@ Configuration::impl::impl(Configuration* self,
     rig_changed_ { false },
     rig_resolution_ { 0 },
     frequency_calibration_disabled_ { false },
-    transceiver_command_number_ { 0 }
+    transceiver_command_number_ { 0 },
+    spot_to_aprs_relay_ { true }
 {
     ui_->setupUi(this);
 
@@ -2067,6 +2075,7 @@ void Configuration::impl::initialize_models()
     ui_->tx_qsy_check_box->setChecked(tx_qsy_allowed_);
     ui_->psk_reporter_check_box->setChecked(spot_to_reporting_networks_);
     ui_->enable_aprs_spotting_check_box->setChecked(spot_to_aprs_);
+    ui_->enable_aprs_relay_check_box->setChecked(spot_to_aprs_relay_);
     ui_->transmit_directed_check_box->setChecked(transmit_directed_);
     ui_->autoreply_on_check_box->setChecked(autoreply_on_at_startup_);
     ui_->autoreply_confirmation_check_box->setChecked(autoreply_confirmation_);
@@ -2415,6 +2424,7 @@ void Configuration::impl::read_settings()
     monitor_last_used_ = settings_->value("MonitorLastUsed", false).toBool();
     spot_to_reporting_networks_ = settings_->value("PSKReporter", true).toBool();
     spot_to_aprs_ = settings_->value("SpotToAPRS", true).toBool();
+    spot_to_aprs_relay_ = settings_->value("APRSISRelay", true).toBool();
     write_logs_ = settings_->value("WriteLogs", true).toBool();
     reset_activity_ = settings_->value("ResetActivity", false).toBool();
     check_for_updates_ = settings_->value("CheckForUpdates", true).toBool();
@@ -2704,6 +2714,8 @@ void Configuration::impl::write_settings()
     settings_->setValue("PTTCommand", ptt_command_);
     settings_->setValue("aprsServer", aprs_server_name_);
     settings_->setValue("aprsServerPort", aprs_server_port_);
+    settings_->setValue("APRSSpotting", spot_to_aprs_);
+    settings_->setValue("APRSISRelay", spot_to_aprs_relay_);
     settings_->setValue("UDPServer", udp_server_name_);
     settings_->setValue("UDPServerPort", udp_server_port_);
     // WSJT-X Protocol settings
@@ -3469,6 +3481,12 @@ void Configuration::impl::on_enable_aprs_spotting_check_box_toggled(bool checked
 {
     ui_->aprs_server_line_edit->setEnabled(checked);
     ui_->aprs_server_port_spin_box->setEnabled(checked);
+}
+
+void Configuration::impl::on_enable_aprs_relay_check_box_toggled(bool checked)
+{
+    spot_to_aprs_relay_ = checked;
+    Q_EMIT self_->spot_to_aprs_relay_changed(spot_to_aprs_relay_);
 }
 
 void Configuration::impl::on_notifications_check_box_toggled(bool checked)
